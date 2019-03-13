@@ -17,7 +17,7 @@ int main () {
 	void *p;	/* Intermediate pointer */
 	// int err; 	/* Error number */
 	int i;	 	/* Loop iterations */
-	double pos = 0.0;
+	double pos;
 	int ticket;
 
 	/* Instanciate input-output data varibles */

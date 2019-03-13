@@ -52,15 +52,6 @@ static int mutex_unlock(pthread_mutex_t *mutex) {
 	return -1;
 }
 
-/** Wake all condition variables.
- *
- * @param[in] ticket 	=	ticket lock.
- * return 0 on success.
-*/
-static int ticket_broadcast(ticket_lock_t *ticket) {
-	return pthread_cond_broadcast(&ticket->cond);
-}
-
 /** Acquire ticket lock
  *
  * @param[in] ticket	=	ticket lock.
@@ -72,25 +63,8 @@ int ticket_lock(ticket_lock_t *ticket) {
 		fprintf(stderr, "recover mutex\n");
 		return -1;
 	}
-	int queue = ticket->queue_tail++;
 
-	while (queue > ticket->queue_head) {
-		if (pthread_cond_wait(&ticket->cond, &ticket->mutex)) {
-			fprintf(stderr, "cond_wait");
-			return -1;
-		}
-		continue;
-	
-		ticket->queue_head++;
-		ticket_broadcast(ticket);
-	} 
-
-	if (mutex_unlock(&ticket->mutex)) {
-		fprintf(stderr, "mutex_unlock");
-		return -1;
-	}
-
-	return queue;
+	return 0;
 }
 
 /** Release ticket lock
@@ -98,27 +72,13 @@ int ticket_lock(ticket_lock_t *ticket) {
  * @param[in] ticket	=	ticket lock.
  * return -1 on error, return 0 on success.
  */
-int ticket_unlock(ticket_lock_t *ticket, int queue) {
-/*
-	if (mutex_lock(&ticket->mutex)) {
-		fprintf(stderr, "mutex_lock");
-		return -1;
-	}
-*/
-	pthread_mutex_lock(&ticket->mutex);	
+int ticket_unlock(ticket_lock_t *ticket) {
 
-	if (queue == ticket->queue_head) {
-		ticket->queue_head++;
-		ticket_broadcast(ticket);
-	}
-
-	pthread_mutex_unlock(&ticket->mutex);
-/*
 	if (mutex_unlock(&ticket->mutex)) {
 		fprintf(stderr, "mutex_unlock");
 		return -1;
 	}
-*/
+
 	return 0;
 }
 
@@ -135,15 +95,6 @@ int ticket_init(ticket_lock_t *ticket) {
 	pthread_mutexattr_setrobust(&mattr, PTHREAD_MUTEX_ROBUST);
 	pthread_mutex_init(&ticket->mutex, &mattr);
 	pthread_mutexattr_destroy(&mattr);
-
-	/* Initialise condition variable */
-	pthread_condattr_t cattr;
-	pthread_condattr_init(&cattr);
-	pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED);
-	pthread_cond_init(&ticket->cond, &cattr);
-	pthread_condattr_destroy(&cattr);
-
-	ticket->queue_head = ticket->queue_tail = 0;
 
 	return 1;
 }
