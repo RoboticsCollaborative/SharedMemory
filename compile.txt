@@ -1,2 +1,3 @@
 gcc -o master shared_memory_master.c shared_memory.c shared_memory.h shared_data.h -lpthread -lrt -lm
 gcc -o slave shared_memory_slave.c shared_memory.c shared_memory.h shared_data.h -lpthread -lrt -lm
+gcc -o test test.c shared_memory.c shared_memory.h shared_data.h -lpthread -lrt -lm
