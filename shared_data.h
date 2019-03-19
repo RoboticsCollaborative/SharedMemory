@@ -16,6 +16,7 @@ typedef struct shared_in {
 } shared_in_t;
 
 typedef struct shared_out {
+    double timestamp;
     double act_pos;
     ticket_lock_t queue;
 } shared_out_t;

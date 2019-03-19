@@ -35,7 +35,7 @@ void add_timespec(struct timespec *ts, int64_t addtime) {
 		ts->tv_sec += (ts->tv_nsec - nsec) / NSEC_PER_SEC;
 		ts->tv_nsec = nsec;
 	}
-	
+
 }
 
 int test(void *ptr) {
@@ -81,6 +81,7 @@ int test(void *ptr) {
 	struct timespec	ts, tleft;
 	int ht, toff;
 	int64_t cycletime;
+	double current_time;
 
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	ht = (ts.tv_nsec / 1000000) + 1; /* round to nearest ms */
@@ -92,6 +93,8 @@ int test(void *ptr) {
 	while(1) {
 
 		/* timer */
+		/* record current time */
+		current_time = (double)(ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec) / (NSEC_PER_SEC);
 		/* calculate next cycle start */
 		add_timespec(&ts, cycletime + toff);
 		/* wait to cycle start */
@@ -100,10 +103,13 @@ int test(void *ptr) {
 		/* update master output */		
 		/* request ticket lock */
 		ticket_lock(&shared_out->queue);
+		/* send current time */
+		shared_out->timestamp = current_time;
 		/* send actual position */
-		pos = sin((double)(2*M_PI/10000 * i));
+		pos = sin((double)(2*M_PI/1000 * i));
 		shared_out->act_pos = pos;
-		printf("receive target points: %lf\n", pos);
+		//printf("receive target points: %lf\n", pos);
+		printf("timestamp: %lf\n", current_time);
 		/* release ticket lock */
 		ticket_unlock(&shared_out->queue);
 
@@ -125,7 +131,7 @@ int run()
 
 int main(int argc, char *argv[]) 
 {
-	int ctime = 10000;
+	int ctime = 1000;
 	struct	sched_param	param;
 	int	policy	=	SCHED_FIFO;
 
