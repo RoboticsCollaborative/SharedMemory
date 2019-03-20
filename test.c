@@ -118,11 +118,13 @@ int test(void *ptr) {
 		ticket_lock(&shared_out->queue);
 		/* send current time */
 		shared_out->timestamp = current_time;
+		shared_out->sec = ts.tv_sec;
+		shared_out->nsec = ts.tv_nsec;
 		/* send actual position */
 		pos = sin((double)(2*M_PI/1000 * i));
 		shared_out->act_pos = pos;
 		//printf("receive target points: %lf\n", pos);
-		printf("timestamp: %lf\n", current_time);
+		printf("Actual position: %lf\n", pos);
 		/* release ticket lock */
 		ticket_unlock(&shared_out->queue);
 

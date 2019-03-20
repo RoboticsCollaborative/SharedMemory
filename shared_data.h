@@ -17,6 +17,8 @@ typedef struct shared_in {
 
 typedef struct shared_out {
     double timestamp;
+    int64_t sec;
+    int64_t nsec;
     double act_pos;
     ticket_lock_t queue;
 } shared_out_t;
