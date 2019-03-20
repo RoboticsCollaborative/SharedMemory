@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#include <signal.h>
 #include <stdio.h>
 #include <inttypes.h>
 #include <stdint.h>
@@ -14,9 +15,21 @@
 #include "shared_data.h"
 #include "shared_memory.h"
 
-#define NSEC_PER_SEC 1000000000
 
+#define NSEC_PER_SEC 1000000000
 pthread_t RT_thread;
+volatile sig_atomic_t done = 0;
+
+
+void intHandler(int sig)
+{
+    if (sig == SIGINT)
+	{
+	    done = 1;
+    	    printf("User requests termination.\n");
+//	    exit(0);
+	}
+}
 
 /* Add ns to timespec */
 void add_timespec(struct timespec *ts, int64_t addtime) {
@@ -90,7 +103,7 @@ int test(void *ptr) {
 	toff = 0;
 
 	/* run in shared memory */
-	while(1) {
+	while(!done) {
 
 		/* timer */
 		/* record current time */
@@ -116,21 +129,20 @@ int test(void *ptr) {
 
 		i++;
 	}
-	
+
 	return 0;
-
-
 }
 
 int run()
 {
- 	while(1);
+ 	while(!done);
 	return 0;
- 
 }
 
 int main(int argc, char *argv[]) 
 {
+	signal(SIGINT, intHandler);
+
 	int ctime = 1000;
 	struct	sched_param	param;
 	int	policy	=	SCHED_FIFO;
