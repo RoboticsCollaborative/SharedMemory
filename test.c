@@ -26,8 +26,14 @@ void intHandler(int sig)
     if (sig == SIGINT)
 	{
 	    done = 1;
+
+	    /* Shared memory opened */
+//	    ticket_lock(&shared_out->queue);
+//	    shared_in->shared_open = true;
+//	    shared_out->shared_open = true;
+//	    ticket_unlock(&shared_out->queue);
+    
     	    printf("User requests termination.\n");
-//	    exit(0);
 	}
 }
 
@@ -71,7 +77,6 @@ int test(void *ptr) {
 		fprintf(stderr, "open(shared_in)\n");
 		return -1;
 	}
-
 	/* initialise ticket lock */
 	ticket_init(&shared_in->queue);
 
@@ -82,14 +87,17 @@ int test(void *ptr) {
 		fprintf(stderr, "open(shared_out)\n");
 		return -1;
 	}
-
 	/* initialise ticket lock */
 	ticket_init(&shared_out->queue);
-
-	/* initialise input-output data */
+		
+	/* initialise memory data*/	
+    	ticket_lock(&shared_out->queue);
+	shared_out->chk = 0;
 	shared_out->act_pos = (double)0.0;
-	shared_in->tg_pos = (double)0.0;
-
+	shared_out->timestamp.sec = 0;
+	shared_out->timestamp.nsec = 0;
+	ticket_unlock(&shared_out->queue);
+	
 	/* timebase */
 	struct timespec	ts, tleft;
 	int ht, toff;
@@ -116,20 +124,20 @@ int test(void *ptr) {
 		/* update master output */		
 		/* request ticket lock */
 		ticket_lock(&shared_out->queue);
+		/* send valid data */
+		shared_out->chk = 1;
 		/* send current time */
-		shared_out->timestamp = current_time;
-		shared_out->sec = ts.tv_sec;
-		shared_out->nsec = ts.tv_nsec;
+		shared_out->timestamp.sec = ts.tv_sec;
+		shared_out->timestamp.nsec = ts.tv_nsec;
 		/* send actual position */
-		pos = sin((double)(2*M_PI/1000 * i));
+		pos = sin((double)(2*M_PI * current_time));
 		shared_out->act_pos = pos;
 		//printf("receive target points: %lf\n", pos);
 		printf("Actual position: %lf\n", pos);
 		/* release ticket lock */
 		ticket_unlock(&shared_out->queue);
 
-
-		i++;
+//		i++;
 	}
 
 	return 0;
