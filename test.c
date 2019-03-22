@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <unistd.h>
@@ -26,13 +27,6 @@ void intHandler(int sig)
     if (sig == SIGINT)
 	{
 	    done = 1;
-
-	    /* Shared memory opened */
-//	    ticket_lock(&shared_out->queue);
-//	    shared_in->shared_open = true;
-//	    shared_out->shared_open = true;
-//	    ticket_unlock(&shared_out->queue);
-    
     	    printf("User requests termination.\n");
 	}
 }
@@ -62,8 +56,14 @@ int test(void *ptr) {
 	/* local variables */
 	void *p;	/* intermediate pointer */
 	// int err; 	/* error number */
-	int i;	 	/* loop iterations */
-	double pos;
+	long int i = 0;	 	/* loop iterations */
+	double pos = 0.0;
+	int data_size = 10000;
+	double *data;
+	double *time;
+	
+	data = (double *)malloc(data_size * sizeof(double));
+	time = (double *)malloc(data_size * sizeof(double));
 
 	/* instanciate input-output data varibles */
 	shared_in_t *shared_in;
@@ -111,7 +111,7 @@ int test(void *ptr) {
 	toff = 0;
 
 	/* run in shared memory */
-	while(!done) {
+	while(!done && i<=data_size) {
 
 		/* timer */
 		/* record current time */
@@ -132,20 +132,28 @@ int test(void *ptr) {
 		/* send actual position */
 		pos = sin((double)(2*M_PI * current_time));
 		shared_out->act_pos = pos;
-		//printf("receive target points: %lf\n", pos);
-		printf("Actual position: %lf\n", pos);
 		/* release ticket lock */
 		ticket_unlock(&shared_out->queue);
+		
+		data[i] = pos;
+		time[i] = current_time;		
+		printf("current_time: %lf, pos: %lf, cycle: %ld\r", time[i], data[i], i);
 
-//		i++;
+		i++;
 	}
 
-	return 0;
-}
+	/* write data to a file */
+	FILE *fptr = fopen("shm.data", "w");
+	for (long int j = 0; j<data_size; j++) {
+		if (j>i) time[j] = data[j] = 0;
+		fprintf(fptr, "%+lf, %+lf\n", time[j], data[j]);
+	}
+	
+	fclose(fptr);
 
-int run()
-{
- 	while(!done);
+	free(data);
+	free(time);
+
 	return 0;
 }
 
@@ -175,8 +183,8 @@ int main(int argc, char *argv[])
 		CPU_SET(3, &CPU3);
 		pthread_setaffinity_np(RT_thread, sizeof(CPU3), &CPU3); 
 		
-		/* Main thread */
-		run();
+		/* wait until sub-thread is finished */
+		pthread_join(RT_thread, NULL);
 	}
 	
 	return 0;
