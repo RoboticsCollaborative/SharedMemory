@@ -58,7 +58,7 @@ int test(void *ptr) {
 	// int err; 	/* error number */
 	long int i = 0;	 	/* loop iterations */
 	double pos = 0.0;
-	int data_size = 10000;
+	int data_size = 100000;
 	double *data;
 	double *time;
 	
@@ -92,10 +92,10 @@ int test(void *ptr) {
 		
 	/* initialise memory data*/	
     	ticket_lock(&shared_out->queue);
-	shared_out->chk = 0;
 	shared_out->act_pos = (double)0.0;
 	shared_out->timestamp.sec = 0;
 	shared_out->timestamp.nsec = 0;
+	shared_out->chk = 0;
 	ticket_unlock(&shared_out->queue);
 	
 	/* timebase */
@@ -124,14 +124,14 @@ int test(void *ptr) {
 		/* update master output */		
 		/* request ticket lock */
 		ticket_lock(&shared_out->queue);
-		/* send valid data */
-		shared_out->chk = 1;
 		/* send current time */
 		shared_out->timestamp.sec = ts.tv_sec;
 		shared_out->timestamp.nsec = ts.tv_nsec;
 		/* send actual position */
 		pos = sin((double)(2*M_PI * current_time));
 		shared_out->act_pos = pos;
+		/* send valid data */
+		shared_out->chk = 1;
 		/* release ticket lock */
 		ticket_unlock(&shared_out->queue);
 		
