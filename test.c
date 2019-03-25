@@ -58,12 +58,18 @@ int test(void *ptr) {
 	// int err; 	/* error number */
 	long int i = 0;	 	/* loop iterations */
 	double pos = 0.0;
-	int data_size = 100000;
+	int data_size = 10000;
 	double *data;
 	double *time;
+	double *time_pre;
+	double *time_diff;
 	
 	data = (double *)malloc(data_size * sizeof(double));
 	time = (double *)malloc(data_size * sizeof(double));
+	time_pre = (double *)malloc(data_size * sizeof(double));
+	time_diff = (double *)malloc(data_size * sizeof(double));
+
+	data[0] = time[0] = time_pre[0] = time_diff[0] = 0.0;
 
 	/* instanciate input-output data varibles */
 	shared_in_t *shared_in;
@@ -90,12 +96,12 @@ int test(void *ptr) {
 	/* initialise ticket lock */
 	ticket_init(&shared_out->queue);
 		
-	/* initialise memory data*/	
+	/* initialise memory data*/
     	ticket_lock(&shared_out->queue);
+	shared_out->chk = 0;
 	shared_out->act_pos = (double)0.0;
 	shared_out->timestamp.sec = 0;
 	shared_out->timestamp.nsec = 0;
-	shared_out->chk = 0;
 	ticket_unlock(&shared_out->queue);
 	
 	/* timebase */
@@ -124,19 +130,21 @@ int test(void *ptr) {
 		/* update master output */		
 		/* request ticket lock */
 		ticket_lock(&shared_out->queue);
+		/* send valid data */
+		shared_out->chk = 1;
 		/* send current time */
 		shared_out->timestamp.sec = ts.tv_sec;
 		shared_out->timestamp.nsec = ts.tv_nsec;
 		/* send actual position */
 		pos = sin((double)(2*M_PI * current_time));
 		shared_out->act_pos = pos;
-		/* send valid data */
-		shared_out->chk = 1;
 		/* release ticket lock */
 		ticket_unlock(&shared_out->queue);
 		
 		data[i] = pos;
-		time[i] = current_time;		
+		time_pre[i] = time[i-1];
+		time[i] = current_time;
+		time_diff[i] = time[i] - time_pre[i];		
 		printf("current_time: %lf, pos: %lf, cycle: %ld\r", time[i], data[i], i);
 
 		i++;
@@ -146,13 +154,15 @@ int test(void *ptr) {
 	FILE *fptr = fopen("shm.data", "w");
 	for (long int j = 0; j<data_size; j++) {
 		if (j>i) time[j] = data[j] = 0;
-		fprintf(fptr, "%+lf, %+lf\n", time[j], data[j]);
+		fprintf(fptr, "%+lf, %+lf, %+lf, %+lf\n", time[j], time_pre[j], time_diff[j], data[j]);
 	}
 	
 	fclose(fptr);
 
 	free(data);
 	free(time);
+	free(time_pre);
+	free(time_diff);
 
 	return 0;
 }
