@@ -13,8 +13,8 @@
 #include <time.h>
 #include <math.h>
 
-#include "shared_data.h"
-#include "shared_memory.h"
+#include "shm_data.h"
+#include "shm.h"
 
 
 #define NSEC_PER_SEC 1000000000
@@ -72,38 +72,18 @@ int test(void *ptr) {
 	data[0] = time[0] = time_pre[0] = time_diff[0] = 0.0;
 
 	/* instanciate input-output data varibles */
-	shared_in_t *shared_in;
-	shared_out_t *shared_out;
+	//shared_in_t *shared_in;
+	//shared_out_t *shared_out;
+	Rdda *rdda;
 
-	/* map data structs to shared memory */
-	/* open and obtain shared memory pointers for master-input data */
-	if (!openSharedMemory(SHARED_IN, &p)) {
-		shared_in = (shared_in_t *) p;
-	} else {
-		fprintf(stderr, "open(shared_in)\n");
-		return -1;
+	rdda = initRdda();
+	for (int i=0; i<2; i++) {
+		rdda->motor[i].motorIn.act_pos = 0.0;
+		rdda->motor[i].motorIn.act_vel = 0.0;
+		rdda->motor[i].rosOut.pos_ref = 0.0;
+		rdda->motor[i].rosOut.stiffness = 0.0;
 	}
-	/* initialise ticket lock */
-	ticket_init(&shared_in->queue);
 
-	/* open and obtain shared memory pointers for master-output data */
-	if (!openSharedMemory(SHARED_OUT, &p)) {
-		shared_out = (shared_out_t *) p;
-	} else {
-		fprintf(stderr, "open(shared_out)\n");
-		return -1;
-	}
-	/* initialise ticket lock */
-	ticket_init(&shared_out->queue);
-		
-	/* initialise memory data*/
-    	ticket_lock(&shared_out->queue);
-	shared_out->chk = 0;
-	shared_out->act_pos = (double)0.0;
-	shared_out->timestamp.sec = 0;
-	shared_out->timestamp.nsec = 0;
-	ticket_unlock(&shared_out->queue);
-	
 	/* timebase */
 	struct timespec	ts, tleft;
 	int ht, toff;
@@ -117,8 +97,8 @@ int test(void *ptr) {
 	toff = 0;
 
 	/* run in shared memory */
-	while(!done && i<=data_size) {
-
+	//while(!done && i<=data_size) {
+	while(!done) {
 		/* timer */
 		/* record current time */
 		current_time = (double)(ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec) / (NSEC_PER_SEC);
@@ -127,37 +107,28 @@ int test(void *ptr) {
 		/* wait to cycle start */
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, &tleft);
 
-		/* update master output */		
-		/* request ticket lock */
-		ticket_lock(&shared_out->queue);
-		/* send valid data */
-		shared_out->chk = 1;
-		/* send current time */
-		shared_out->timestamp.sec = ts.tv_sec;
-		shared_out->timestamp.nsec = ts.tv_nsec;
-		/* send actual position */
-		pos = sin((double)(2*M_PI * current_time));
-		shared_out->act_pos = pos;
-		/* release ticket lock */
-		ticket_unlock(&shared_out->queue);
-		
-		data[i] = pos;
-		time_pre[i] = time[i-1];
-		time[i] = current_time;
-		time_diff[i] = time[i] - time_pre[i];		
-		printf("current_time: %lf, pos: %lf, cycle: %ld\r", time[i], data[i], i);
+	
+//		data[i] = pos;
+//		time_pre[i] = time[i-1];
+//		time[i] = current_time;
+//		time_diff[i] = time[i] - time_pre[i];		
+//		printf("current_time: %lf, pos: %lf, cycle: %ld\r", time[i], data[i], i);
 
-		i++;
+		mutex_lock(&rdda->mutex);
+		printf("pos_ref[0]: %lf, stiffness[0]: %lf\r", rdda->motor[0].rosOut.pos_ref, rdda->motor[0].rosOut.stiffness);
+		mutex_unlock(&rdda->mutex);
+
+		//i++;
 	}
 
 	/* write data to a file */
-	FILE *fptr = fopen("shm.data", "w");
-	for (long int j = 0; j<data_size; j++) {
-		if (j>i) time[j] = data[j] = 0;
-		fprintf(fptr, "%+lf, %+lf, %+lf, %+lf\n", time[j], time_pre[j], time_diff[j], data[j]);
-	}
+//	FILE *fptr = fopen("shm.data", "w");
+//	for (long int j = 0; j<data_size; j++) {
+//		if (j>i) time[j] = data[j] = 0;
+//		fprintf(fptr, "%+lf, %+lf, %+lf, %+lf\n", time[j], time_pre[j], time_diff[j], data[j]);
+//	}
 	
-	fclose(fptr);
+//	fclose(fptr);
 
 	free(data);
 	free(time);
