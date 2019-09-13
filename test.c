@@ -115,7 +115,13 @@ int test(void *ptr) {
 //		printf("current_time: %lf, pos: %lf, cycle: %ld\r", time[i], data[i], i);
 
 		mutex_lock(&rdda->mutex);
-		printf("pos_ref[0]: %lf, stiffness[0]: %lf\r", rdda->motor[0].rosOut.pos_ref, rdda->motor[0].rosOut.stiffness);
+	
+		printf("pos_ref: [%lf, %lf], vel_sat: [%lf, %lf], tau_sat: [%lf, %lf], stiff: [%lf, %lf]\r", 
+		rdda->motor[0].rosOut.pos_ref, rdda->motor[1].rosOut.pos_ref,
+		rdda->motor[0].rosOut.vel_sat, rdda->motor[1].rosOut.vel_sat,
+		rdda->motor[0].rosOut.tau_sat, rdda->motor[1].rosOut.tau_sat,
+		rdda->motor[0].rosOut.stiffness, rdda->motor[1].rosOut.stiffness);
+
 		mutex_unlock(&rdda->mutex);
 
 		//i++;
