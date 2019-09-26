@@ -115,6 +115,11 @@ int test(void *ptr) {
 //		printf("current_time: %lf, pos: %lf, cycle: %ld\r", time[i], data[i], i);
 
 		mutex_lock(&rdda->mutex);
+
+
+		rdda->ts.nsec = ts.tv_nsec;
+		rdda->ts.sec = ts.tv_sec;
+		rdda->motor[0].motorIn.act_pos = 3.14159;
 	
 		printf("pos_ref: [%lf, %lf], vel_sat: [%lf, %lf], tau_sat: [%lf, %lf], stiff: [%lf, %lf]\r", 
 		rdda->motor[0].rosOut.pos_ref, rdda->motor[1].rosOut.pos_ref,
