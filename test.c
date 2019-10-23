@@ -96,17 +96,22 @@ int test(void *ptr) {
 	cycletime = *(int*)ptr * 1000; /* cycletime in ns */
 	toff = 0;
 
+	/* measure time interval */
+	struct timespec start, end;
+	double time_taken = 0.0, time_left = 0.0;
+
 	/* run in shared memory */
 	//while(!done && i<=data_size) {
 	while(!done) {
 		/* timer */
 		/* record current time */
-		current_time = (double)(ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec) / (NSEC_PER_SEC);
+		// current_time = (double)(ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec) / (NSEC_PER_SEC);
 		/* calculate next cycle start */
-		add_timespec(&ts, cycletime + toff);
+		// add_timespec(&ts, cycletime + toff);
 		/* wait to cycle start */
-		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, &tleft);
+		// clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, &tleft);
 
+		clock_gettime(CLOCK_MONOTONIC, &start);
 	
 //		data[i] = pos;
 //		time_pre[i] = time[i-1];
@@ -121,15 +126,19 @@ int test(void *ptr) {
 		rdda->ts.sec = ts.tv_sec;
 		rdda->motor[0].motorIn.act_pos = 3.14159;
 	
-		printf("pos_ref: [%lf, %lf], vel_sat: [%lf, %lf], tau_sat: [%lf, %lf], stiff: [%lf, %lf]\r", 
-		rdda->motor[0].rosOut.pos_ref, rdda->motor[1].rosOut.pos_ref,
-		rdda->motor[0].rosOut.vel_sat, rdda->motor[1].rosOut.vel_sat,
-		rdda->motor[0].rosOut.tau_sat, rdda->motor[1].rosOut.tau_sat,
-		rdda->motor[0].rosOut.stiffness, rdda->motor[1].rosOut.stiffness);
+//		printf("pos_ref: [%lf, %lf], vel_sat: [%lf, %lf], tau_sat: [%lf, %lf], stiff: [%lf, %lf]\r", 
+//		rdda->motor[0].rosOut.pos_ref, rdda->motor[1].rosOut.pos_ref,
+//		rdda->motor[0].rosOut.vel_sat, rdda->motor[1].rosOut.vel_sat,
+//		rdda->motor[0].rosOut.tau_sat, rdda->motor[1].rosOut.tau_sat,
+//		rdda->motor[0].rosOut.stiffness, rdda->motor[1].rosOut.stiffness);
 
 		mutex_unlock(&rdda->mutex);
 
 		//i++;
+		clock_gettime(CLOCK_MONOTONIC, &end);
+		time_taken = ((double)(end.tv_sec-start.tv_sec)*1000000 + (double)(end.tv_nsec-start.tv_nsec)/1000);
+		time_left = (double)(500-time_taken);
+		printf("taken_time: %lf, left_time: %lf\r", time_taken, time_left);
 	}
 
 	/* write data to a file */
