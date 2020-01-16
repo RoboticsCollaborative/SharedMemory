@@ -11,6 +11,11 @@ typedef struct {
     double act_tau;
 } MotorIn;
 
+/* Information sent to ROS interface */
+typedef  struct {
+    int contact_flag;
+} RosIn;
+
 /** BEL drive CSP Mode outputs from master */
 typedef struct {
     double tg_pos;
@@ -36,6 +41,7 @@ typedef struct {
 typedef struct {
     MotorIn motorIn;
     MotorOut motorOut;
+    RosIn rosIn;
     RosOut rosOut;
     /* Constant */
     double tau_max;
